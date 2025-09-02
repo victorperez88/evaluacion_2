@@ -1,0 +1,59 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout del código
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # 2. Configurar JDK
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      # 3. Compilar y ejecutar pruebas con Maven
+      - name: Build and Run Tests
+        run: mvn clean verify -B
+
+      # 4. Generar reporte de cobertura con JaCoCo
+      - name: Generate JaCoCo Report
+        if: success()
+        run: mvn jacoco:report
+
+      # 5. Publicar resultados de pruebas en GitHub Actions
+      - name: Publish Test Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results
+          path: target/surefire-reports/
+
+      # 6. Publicar reporte de cobertura (HTML) como artefacto
+      - name: Publish Coverage Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-report
+          path: target/site/jacoco/
+
+      # 7. Opcional: Generar reportes Cucumber (si usas BDD)
+      - name: Publish Cucumber Reports
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: cucumber-report
+          path: target/cucumber-reports/
